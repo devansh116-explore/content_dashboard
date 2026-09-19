@@ -1,0 +1,75 @@
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { Category, ContentItem, PagedResponse } from "@/lib/types";
+
+interface FetchArgs {
+  categories: Category[];
+  page: number;
+  search?: string;
+  trending?: boolean;
+}
+
+function buildParams({ categories, page, search, trending }: FetchArgs): string {
+  const params = new URLSearchParams({ page: String(page) });
+  if (categories.length) params.set("categories", categories.join(","));
+  if (search) params.set("search", search);
+  if (trending) params.set("trending", "true");
+  return params.toString();
+}
+
+export const contentApi = createApi({
+  reducerPath: "contentApi",
+  baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
+  tagTypes: ["News", "Recommendations", "Social"],
+  endpoints: (builder) => ({
+    getNews: builder.query<PagedResponse<ContentItem>, FetchArgs>({
+      query: (args) => `/news?${buildParams(args)}`,
+      serializeQueryArgs: ({ queryArgs, endpointName }) =>
+        JSON.stringify({
+          endpointName,
+          categories: queryArgs.categories,
+          search: queryArgs.search,
+          trending: queryArgs.trending,
+        }),
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) return newItems;
+        currentCache.items.push(...newItems.items);
+        currentCache.nextPage = newItems.nextPage;
+      },
+      forceRefetch: ({ currentArg, previousArg }) => currentArg?.page !== previousArg?.page,
+    }),
+    getRecommendations: builder.query<PagedResponse<ContentItem>, FetchArgs>({
+      query: (args) => `/recommendations?${buildParams(args)}`,
+      serializeQueryArgs: ({ queryArgs, endpointName }) =>
+        JSON.stringify({
+          endpointName,
+          categories: queryArgs.categories,
+          search: queryArgs.search,
+          trending: queryArgs.trending,
+        }),
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) return newItems;
+        currentCache.items.push(...newItems.items);
+        currentCache.nextPage = newItems.nextPage;
+      },
+      forceRefetch: ({ currentArg, previousArg }) => currentArg?.page !== previousArg?.page,
+    }),
+    getSocial: builder.query<PagedResponse<ContentItem>, FetchArgs>({
+      query: (args) => `/social?${buildParams(args)}`,
+      serializeQueryArgs: ({ queryArgs, endpointName }) =>
+        JSON.stringify({
+          endpointName,
+          categories: queryArgs.categories,
+          search: queryArgs.search,
+          trending: queryArgs.trending,
+        }),
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) return newItems;
+        currentCache.items.push(...newItems.items);
+        currentCache.nextPage = newItems.nextPage;
+      },
+      forceRefetch: ({ currentArg, previousArg }) => currentArg?.page !== previousArg?.page,
+    }),
+  }),
+});
+
+export const { useGetNewsQuery, useGetRecommendationsQuery, useGetSocialQuery } = contentApi;

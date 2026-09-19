@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Tailwind v4 defaults to the OS-level `prefers-color-scheme` for `dark:`.
+   We drive dark mode from Redux/localStorage instead (see ThemeSync), toggling
+   a `.dark` class on <html>, so we redefine the `dark:` variant to key off
+   that class rather than the media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #fafafa;
+  --foreground: #171717;
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
