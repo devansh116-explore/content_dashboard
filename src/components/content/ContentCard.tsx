@@ -38,7 +38,7 @@ export default function ContentCard({ item }: { item: ContentItem }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={item.imageUrl}
-          alt=""
+          alt={item.title}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
         />

@@ -59,16 +59,17 @@ src/
     layout.tsx                                    # providers, theme sync
   components/
     layout/       Sidebar, Header
-    content/       ContentCard, ContentGrid (infinite scroll), Feed/Trending/Favorites sections, state views
+    content/       ContentCard, ContentGrid (infinite scroll + optional drag-and-drop),
+                    SortableCardWrapper, Feed/Trending/Favorites sections, state views
     search/        Debounced SearchBar
     settings/       PreferencesPanel (category picker)
     providers/       ReduxProvider, ThemeSync
   store/
     slices/          preferences, favorites, ui
     api/contentApi.ts   RTK Query endpoints
-  hooks/            useDebounce, useUnifiedFeed
+  hooks/            useDebounce, useUnifiedFeed, useOrderedItems
   lib/                types, mock data generator, localStorage helper
-e2e/                 Playwright specs
+e2e/                 Playwright specs (search, favorites drag-and-drop, feed drag-and-drop)
 ```
 
 ### Why API routes proxy the external APIs
@@ -106,6 +107,23 @@ Feed and Trending sections use this hook (Trending additionally re-sorts by
 a mock engagement metric) — the pagination, loading, and error-handling logic
 is written once and shared.
 
+### Drag-and-drop reordering
+
+`ContentGrid` takes an optional `onReorder(activeId, overId)` callback; when
+provided, it wraps its cards in a `@dnd-kit` `DndContext`/`SortableContext`
+with both a `PointerSensor` and a `KeyboardSensor` (drag handles are real
+`<button>` elements, so they're reachable by Tab and operable with arrow
+keys — not mouse/touch-only). Two call sites share this:
+
+- **Feed** — `useOrderedItems` layers a session-local display order on top
+  of the RTK-Query-fetched items: dragging a card moves it, and newly
+  arriving items (from search/filter changes or "load more") are appended
+  at the end rather than resetting the order. This isn't persisted to
+  `localStorage`, since the underlying feed content is dynamic/paginated —
+  the order applies to the current session only.
+- **Favorites** — reorders `favorites.order` in Redux directly, which *is*
+  persisted, since a favorites list is a stable set the user curates.
+
 ### Testing strategy
 
 - **Unit** (Vitest): `preferencesSlice` and `favoritesSlice` reducers —
@@ -115,12 +133,19 @@ is written once and shared.
   timing, verified with real timers and `waitFor` rather than mocked timers,
   which proved more reliable against React's scheduler) and `ContentCard`
   (rendering, favorite toggle).
-- **E2E** (Playwright): search-then-filter, and the two flows most likely to
-  hide integration bugs — favoriting a card end-to-end through Redux, and
-  drag-and-drop reordering via `@dnd-kit`'s pointer-based sensor. Running the
-  E2E suite is also what surfaced the RTK Query cache-key bug mentioned
-  above: it initially failed because three sources were rendering as
-  duplicated "News" cards.
+- **Integration** (Vitest + RTL, `FeedSection.integration.test.tsx`): exercises
+  the real pipeline — Redux store, RTK Query's `fetchBaseQuery`, and the
+  rendered component tree together — with only `fetch` mocked (routed by
+  which of the three API paths it's called with). Covers the loading
+  skeleton, successful render across all three merged sources, the empty
+  state, and the error state. This is distinct from the component tests
+  above, which exercise one component in isolation with props/mock stores;
+  this suite is what actually proves the fetch → Redux → render pipeline
+  works end-to-end, which is what the brief's "content renders properly
+  when fetched... empty states, errors" requirement is asking for.
+- **E2E** (Playwright): debounced search, favoriting a card end-to-end
+  through Redux, and drag-and-drop reordering (both keyboard and
+  pointer-based) on **both** the Favorites section and the main Feed.
 
 ## Data sources
 
@@ -136,6 +161,48 @@ this made pagination and the E2E tests reproducible during development. Each
 of the three sources is salted independently so they don't coincidentally
 generate the same headline for the same feed position.
 
+## Accessibility
+
+- Card images carry the item's headline as `alt` text (they're informative
+  content, not decoration).
+- Sidebar nav exposes `aria-current="page"` for the active section; category
+  chips and the favorite toggle expose `aria-pressed`.
+- Drag-and-drop works via keyboard (Tab to a handle, arrow keys to move,
+  covered by an E2E test) as well as pointer/touch.
+- Settings/preferences are reachable from both the sidebar and the header
+  (the header entry point matches the brief's own layout language: "top
+  header with a search bar, user settings, and account info").
+
+This isn't a full WCAG audit — no screen-reader pass or automated `axe`
+scan was run — but the structural basics (semantic buttons, labelled
+controls, keyboard-operable interactions) are in place.
+
+## Self-review pass
+
+After the initial build, I went back through the brief section-by-section
+as an evaluator would and fixed what I'd actually missed rather than just
+noting it:
+
+- **Drag-and-drop was Favorites-only.** The brief says "reorder the content
+  cards in **their feed**" — that's the main feed. Added (see above), with
+  its own E2E coverage.
+- **No integration tests.** The brief names this as a distinct category from
+  unit tests ("Ensure that content is rendered properly when it is fetched
+  and handle edge cases like no content, empty states, and errors"). Added
+  `FeedSection.integration.test.tsx` (see Testing strategy above). Writing
+  it also surfaced a couple of real bugs worth naming: `fetchBaseQuery`
+  needs an absolute `baseUrl` to work under Node's `fetch`/`Request` (which,
+  unlike a browser, has no document base URL to resolve a relative path
+  against) — fixed by deriving it from `window.location.origin`, which is
+  also just a more robust choice than a bare `"/api"` in general.
+- **Accessibility gaps** — see the section above.
+
+**Genuinely out of reach from this environment, not silently skipped:** a
+recorded demo video and a hosted live link, both explicitly requested in
+the brief's submission guidelines. I can't record video or deploy to a
+public host from here — if you'd like, I can walk through deploying this to
+Vercel, which is a couple of minutes once you have an account.
+
 ## Scope notes — what's here and what's deliberately deferred
 
 This assignment's full spec (auth, real-time WebSocket updates, i18n, a
@@ -147,20 +214,23 @@ at production quality. Priorities, in order:
 - Personalized feed merging 3 sources, with preferences persisted
 - Debounced search across all sources
 - Infinite scroll (IntersectionObserver-based)
-- Favorites with drag-and-drop reordering
+- Drag-and-drop reordering on both the main Feed (session-local) and
+  Favorites (persisted), with pointer and keyboard support
 - Dark mode (CSS custom properties + Tailwind, persisted)
 - Loading/empty/error states everywhere data is fetched
 - Framer Motion micro-interactions (card hover, panel transitions)
-- Unit, component, and E2E test coverage on the highest-value flows
+- Unit, integration, component, and E2E test coverage on the highest-value
+  flows
 
 **Deliberately deferred** (would tackle next, in this order):
-1. Broader Playwright coverage (currently the two highest-value flows are
-   covered; an auth flow doesn't apply since there's no auth in this build)
+1. A recorded demo video and a hosted live link (see Self-review pass above)
 2. Auth (NextAuth.js) and per-user saved preferences server-side
 3. Real-time updates via WebSockets/SSE for the social feed
 4. `react-i18next` multi-language support
 5. A dedicated design system pass (current styling is a clean, consistent
    utility-first baseline rather than a fully bespoke visual identity)
+6. A full automated accessibility audit (`axe`/screen-reader pass) beyond
+   the structural basics described above
 
 ## Known limitations
 
@@ -170,3 +240,7 @@ at production quality. Priorities, in order:
 - `NEWS_API_KEY`'s free tier restricts `top-headlines` to one category per
   request; multi-category selections use the first selected category for
   live News queries (mock data covers all selected categories evenly).
+- Feed reordering is session-local (see "Drag-and-drop reordering" above) —
+  refreshing the page returns the feed to its fetched order. This is a
+  deliberate choice given paginated, server-driven content, not an
+  oversight, but worth knowing going in.

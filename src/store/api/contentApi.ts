@@ -18,7 +18,16 @@ function buildParams({ categories, page, search, trending }: FetchArgs): string 
 
 export const contentApi = createApi({
   reducerPath: "contentApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "/api" }),
+  baseQuery: fetchBaseQuery({
+    // An absolute base URL is required outside a real browser (Node's
+    // fetch/Request implementation — used by Vitest's jsdom environment,
+    // and by any server-side execution — has no browser "document base
+    // URL" to resolve a relative path against, unlike an actual browser).
+    // window.location.origin gives the correct absolute origin both in the
+    // browser and in tests, so this is a portable fix rather than a
+    // test-only shim.
+    baseUrl: typeof window !== "undefined" ? `${window.location.origin}/api` : "http://localhost/api",
+  }),
   tagTypes: ["News", "Recommendations", "Social"],
   endpoints: (builder) => ({
     getNews: builder.query<PagedResponse<ContentItem>, FetchArgs>({

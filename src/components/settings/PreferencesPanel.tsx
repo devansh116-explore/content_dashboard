@@ -58,6 +58,7 @@ export default function PreferencesPanel({
                   <button
                     key={category}
                     onClick={() => dispatch(toggleCategory(category))}
+                    aria-pressed={active}
                     className={clsx(
                       "rounded-full border px-3 py-1.5 text-sm capitalize transition-colors",
                       active

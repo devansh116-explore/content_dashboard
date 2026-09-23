@@ -32,6 +32,7 @@ export default function Sidebar({ onOpenSettings }: { onOpenSettings: () => void
           <button
             key={key}
             onClick={() => dispatch(setActiveSection(key))}
+            aria-current={active === key ? "page" : undefined}
             className={clsx(
               "flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               active === key
