@@ -8,12 +8,9 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3210",
     trace: "retain-on-failure",
-    launchOptions: {
-      executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-    },
   },
   webServer: {
-    command: "npm run start -- -p 3210",
+    command: "npm run build && npm run start -- -p 3210",
     url: "http://localhost:3210",
     reuseExistingServer: false,
     timeout: 60_000,

@@ -65,6 +65,8 @@ const AUTHORS = [
   "M. Novak",
 ];
 
+const MOCK_BASE_TIME = Date.parse("2026-01-01T00:00:00.000Z");
+
 function pick<T>(arr: T[], rnd: () => number): T {
   return arr[Math.floor(rnd() * arr.length)];
 }
@@ -111,7 +113,7 @@ export function generateMockItems(
       imageUrl: imageFor(category, seed),
       url: "https://example.com",
       author: pick(AUTHORS, rnd),
-      publishedAt: new Date(Date.now() - hoursAgo * 3600_000).toISOString(),
+      publishedAt: new Date(MOCK_BASE_TIME - (seed * 6 + hoursAgo) * 3600_000).toISOString(),
       ctaLabel,
       metric: trending
         ? { label: source === "recommendation" ? "score" : "views", value: Math.floor(rnd() * 9000) + 100 }

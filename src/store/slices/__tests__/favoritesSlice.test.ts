@@ -75,4 +75,14 @@ describe("favoritesSlice", () => {
     expect(state.order).toEqual(["a"]);
     expect(state.items.a).toEqual(item);
   });
+
+  it("removes missing ids from malformed persisted order", () => {
+    const item = makeItem("a");
+    window.localStorage.setItem(
+      "content-dashboard:favorites",
+      JSON.stringify({ items: { a: item }, order: ["missing", "a", 42] })
+    );
+    const state = reducer(undefined, hydrateFavorites());
+    expect(state.order).toEqual(["a"]);
+  });
 });

@@ -19,7 +19,7 @@ const favoritesSlice = createSlice({
   initialState: defaultState,
   reducers: {
     hydrate(state) {
-      const saved = readStorage(STORAGE_KEYS.favorites, { items: {}, order: [] as string[] });
+      const saved = getHydratedFavorites();
       state.items = saved.items;
       state.order = saved.order;
       state.hydrated = true;
@@ -44,6 +44,21 @@ const favoritesSlice = createSlice({
 
 function persist(state: FavoritesState) {
   writeStorage(STORAGE_KEYS.favorites, { items: state.items, order: state.order });
+}
+
+function getHydratedFavorites(): Pick<FavoritesState, "items" | "order"> {
+  const saved = readStorage<unknown>(STORAGE_KEYS.favorites, null);
+  if (!saved || typeof saved !== "object") return { items: {}, order: [] };
+
+  const candidate = saved as { items?: unknown; order?: unknown };
+  const items = candidate.items && typeof candidate.items === "object" && !Array.isArray(candidate.items)
+    ? candidate.items as Record<string, ContentItem>
+    : {};
+  const order = Array.isArray(candidate.order)
+    ? candidate.order.filter((id): id is string => typeof id === "string" && Boolean(items[id]))
+    : [];
+
+  return { items, order };
 }
 
 export const { hydrate: hydrateFavorites, toggleFavorite, reorderFavorites } = favoritesSlice.actions;

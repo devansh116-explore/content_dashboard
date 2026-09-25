@@ -60,4 +60,14 @@ describe("preferencesSlice", () => {
     expect(state.categories.length).toBeGreaterThan(0);
     expect(state.hydrated).toBe(true);
   });
+
+  it("ignores malformed persisted preferences", () => {
+    window.localStorage.setItem(
+      "content-dashboard:preferences",
+      JSON.stringify({ categories: ["invalid", "science"], darkMode: "yes" })
+    );
+    const state = reducer(undefined, hydrate());
+    expect(state.categories).toEqual(["science"]);
+    expect(state.darkMode).toBe(false);
+  });
 });

@@ -46,7 +46,7 @@ npm run start        # run the production build
 npm run lint         # eslint
 npm run test         # unit + component tests (Vitest + React Testing Library)
 npm run test:watch   # unit tests in watch mode
-npm run test:e2e     # end-to-end tests (Playwright) — builds & serves automatically
+npm run test:e2e     # end-to-end tests (Playwright) — builds and serves automatically
 ```
 
 ## Architecture

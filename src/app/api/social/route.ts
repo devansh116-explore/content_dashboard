@@ -1,18 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ALL_CATEGORIES, Category, ContentItem, PagedResponse } from "@/lib/types";
+import { ContentItem, PagedResponse } from "@/lib/types";
 import { generateMockItems } from "@/lib/mockData";
+import { filterSearch, PAGE_SIZE, parseCategories, parsePage } from "@/lib/queryParams";
 
 export const dynamic = "force-dynamic";
-
-const PAGE_SIZE = 12;
-
-function parseCategories(param: string | null): Category[] {
-  if (!param) return [];
-  return param
-    .split(",")
-    .map((c) => c.trim())
-    .filter((c): c is Category => (ALL_CATEGORIES as string[]).includes(c));
-}
 
 // Social platforms' free tiers don't realistically support a take-home
 // assignment (Twitter/X API is paid-only; Instagram requires app review),
@@ -21,14 +12,12 @@ function parseCategories(param: string | null): Category[] {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const categories = parseCategories(searchParams.get("categories"));
-  const page = Number(searchParams.get("page") ?? "1");
+  const page = parsePage(searchParams.get("page"));
   const search = searchParams.get("search") ?? "";
   const trending = searchParams.get("trending") === "true";
 
   const items = generateMockItems("social", categories, page, PAGE_SIZE, trending);
-  const filtered = search
-    ? items.filter((i) => i.title.toLowerCase().includes(search.toLowerCase()))
-    : items;
+  const filtered = filterSearch(items, search);
 
   const response: PagedResponse<ContentItem> = {
     items: filtered,

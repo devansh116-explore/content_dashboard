@@ -41,7 +41,8 @@ export const contentApi = createApi({
         }),
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) return newItems;
-        currentCache.items.push(...newItems.items);
+        const existingIds = new Set(currentCache.items.map((item) => item.id));
+        currentCache.items.push(...newItems.items.filter((item) => !existingIds.has(item.id)));
         currentCache.nextPage = newItems.nextPage;
       },
       forceRefetch: ({ currentArg, previousArg }) => currentArg?.page !== previousArg?.page,
@@ -57,7 +58,8 @@ export const contentApi = createApi({
         }),
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) return newItems;
-        currentCache.items.push(...newItems.items);
+        const existingIds = new Set(currentCache.items.map((item) => item.id));
+        currentCache.items.push(...newItems.items.filter((item) => !existingIds.has(item.id)));
         currentCache.nextPage = newItems.nextPage;
       },
       forceRefetch: ({ currentArg, previousArg }) => currentArg?.page !== previousArg?.page,
@@ -73,7 +75,8 @@ export const contentApi = createApi({
         }),
       merge: (currentCache, newItems, { arg }) => {
         if (arg.page === 1) return newItems;
-        currentCache.items.push(...newItems.items);
+        const existingIds = new Set(currentCache.items.map((item) => item.id));
+        currentCache.items.push(...newItems.items.filter((item) => !existingIds.has(item.id)));
         currentCache.nextPage = newItems.nextPage;
       },
       forceRefetch: ({ currentArg, previousArg }) => currentArg?.page !== previousArg?.page,
