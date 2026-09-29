@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { skipToken } from "@reduxjs/toolkit/query";
 import { BrainCircuit, Clock3, Copy, ExternalLink, LoaderCircle, RefreshCw, X } from "lucide-react";
 import { ContentItem } from "@/lib/types";
@@ -24,14 +24,16 @@ export default function ContentDetailDrawer({
   const isReadLater = useAppSelector((state) => Boolean(item && state.readLater.items[item.id]));
   const { push } = useToast();
   const detailQuery = useGetMoreInfoQuery(open && item ? item : skipToken);
-  const [summaryRequested, setSummaryRequested] = useState(false);
+  const [summaryRequestedFor, setSummaryRequestedFor] = useState<string | null>(null);
+  const summaryRequested = Boolean(open && item && summaryRequestedFor === item.id);
   const aiSummaryQuery = useGetAiSummaryQuery(summaryRequested && open && item ? item : skipToken);
   const summary = detailQuery.data?.summary ?? item?.moreInfo?.summary ?? item?.description ?? "";
   const fullContext = detailQuery.data?.content ?? item?.moreInfo?.content;
 
-  useEffect(() => {
-    setSummaryRequested(false);
-  }, [item?.id, open]);
+  const handleClose = useCallback(() => {
+    setSummaryRequestedFor(null);
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) return;
@@ -39,6 +41,7 @@ export default function ContentDetailDrawer({
     const dialog = dialogRef.current;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        setSummaryRequestedFor(null);
         onClose();
         return;
       }
@@ -82,7 +85,7 @@ export default function ContentDetailDrawer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={handleClose}
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px]"
           />
 
@@ -109,7 +112,7 @@ export default function ContentDetailDrawer({
 
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 aria-label="Close details"
                 className="flex h-9 w-9 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-900"
               >
@@ -206,7 +209,7 @@ export default function ContentDetailDrawer({
                   {!summaryRequested && (
                     <button
                       type="button"
-                      onClick={() => setSummaryRequested(true)}
+                      onClick={() => setSummaryRequestedFor(item.id)}
                       className="inline-flex items-center gap-2 rounded-md bg-neutral-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-neutral-700 dark:bg-white dark:text-neutral-900"
                     >
                       <BrainCircuit size={14} />
@@ -258,7 +261,7 @@ export default function ContentDetailDrawer({
             <div className="flex items-center justify-between gap-3 border-t border-neutral-200 p-4 dark:border-neutral-800">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className="rounded-lg border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-900"
               >
                 Close

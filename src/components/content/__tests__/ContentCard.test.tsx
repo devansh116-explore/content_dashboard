@@ -6,6 +6,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import favoritesReducer from "@/store/slices/favoritesSlice";
 import readLaterReducer from "@/store/slices/readLaterSlice";
 import { ContentItem } from "@/lib/types";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 import ContentCard from "../ContentCard";
 
 const item: ContentItem = {
@@ -24,9 +25,11 @@ const item: ContentItem = {
 function renderCard() {
   const store = configureStore({ reducer: { favorites: favoritesReducer, readLater: readLaterReducer } });
   render(
-    <Provider store={store}>
-      <ContentCard item={item} />
-    </Provider>
+    <ToastProvider>
+      <Provider store={store}>
+        <ContentCard item={item} />
+      </Provider>
+    </ToastProvider>
   );
   return store;
 }

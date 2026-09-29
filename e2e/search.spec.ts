@@ -11,12 +11,9 @@ test.describe("Search", () => {
     const search = page.getByLabel("Search content");
     await search.fill("technology");
 
-    // Debounce window is 350ms — result should update shortly after, without
-    // requiring a page reload or explicit submit.
-    await expect(async () => {
-      const count = await page.locator("article").count();
-      expect(count).toBeGreaterThan(0);
-    }).toPass({ timeout: 5_000 });
+    // Only social mock headlines include the category name, so this query
+    // settles to the four matching social posts rather than all 36 items.
+    await expect(page.locator("article")).toHaveCount(4, { timeout: 5_000 });
 
     const titles = await page.locator("article h3").allTextContents();
     // At least the mock data is generated in a way that "technology" search

@@ -8,6 +8,7 @@ import favoritesReducer from "@/store/slices/favoritesSlice";
 import readLaterReducer from "@/store/slices/readLaterSlice";
 import uiReducer from "@/store/slices/uiSlice";
 import { ContentItem, PagedResponse } from "@/lib/types";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 import FeedSection from "../FeedSection";
 
 // This suite exercises the real pipeline — RTK Query's fetchBaseQuery,
@@ -70,9 +71,11 @@ function renderFeed(categories: PreferencesState["categories"] = ["technology"])
     },
   });
   render(
-    <Provider store={store}>
-      <FeedSection />
-    </Provider>
+    <ToastProvider>
+      <Provider store={store}>
+        <FeedSection />
+      </Provider>
+    </ToastProvider>
   );
   return store;
 }

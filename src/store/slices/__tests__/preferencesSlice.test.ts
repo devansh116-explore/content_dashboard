@@ -24,10 +24,10 @@ describe("preferencesSlice", () => {
     expect(state.categories).toEqual(["sports"]);
   });
 
-  it("supports removing every category (empty selection is valid)", () => {
+  it("keeps the last selected category", () => {
     const initial = reducer(undefined, setCategories(["technology"]));
     const state = reducer(initial, toggleCategory("technology"));
-    expect(state.categories).toEqual([]);
+    expect(state.categories).toEqual(["technology"]);
   });
 
   it("toggles dark mode", () => {

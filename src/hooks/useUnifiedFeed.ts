@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   useGetNewsQuery,
   useGetRecommendationsQuery,
@@ -45,10 +45,9 @@ export function useUnifiedFeed({ trending = false }: { trending?: boolean } = {}
   const favorites = useAppSelector((s) => s.favorites.items);
   const readLater = useAppSelector((s) => s.readLater.items);
   const hydrated = useAppSelector((s) => s.preferences.hydrated);
-  const [page, setPage] = useState(1);
   const filterKey = JSON.stringify({ categories, search, trending, sourceFilter });
-  const [lastFilterKey, setLastFilterKey] = useState(filterKey);
-  const effectivePage = filterKey === lastFilterKey ? page : 1;
+  const [pagination, setPagination] = useState({ filterKey, page: 1 });
+  const effectivePage = pagination.filterKey === filterKey ? pagination.page : 1;
 
   const args = { categories, page: effectivePage, search: search || undefined, trending };
   const news = useGetNewsQuery(args, {
@@ -107,21 +106,14 @@ export function useUnifiedFeed({ trending = false }: { trending?: boolean } = {}
 
   const loadMore = useCallback(() => {
     if (isFetchingMore || !hasMore) return;
-    setPage((p) => p + 1);
-  }, [hasMore, isFetchingMore]);
+    setPagination({ filterKey, page: effectivePage + 1 });
+  }, [effectivePage, filterKey, hasMore, isFetchingMore]);
 
   const retry = useCallback(() => {
     if (sourceFilter === "all" || sourceFilter === "news") news.refetch();
     if (sourceFilter === "all" || sourceFilter === "recommendation") recommendations.refetch();
     if (sourceFilter === "all" || sourceFilter === "social") social.refetch();
   }, [news, recommendations, social, sourceFilter]);
-
-  useEffect(() => {
-    if (filterKey !== lastFilterKey) {
-      setLastFilterKey(filterKey);
-      setPage(1);
-    }
-  }, [filterKey, lastFilterKey]);
 
   return {
     items,
