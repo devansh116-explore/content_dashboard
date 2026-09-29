@@ -52,7 +52,7 @@ test.describe("Favorites and drag-and-drop", () => {
     const secondTitleAfter = await favoriteCardsAfter.nth(1).locator("h3").textContent();
 
     // Order should have changed (the two titles swap positions).
-    expect([firstTitleAfter, secondTitleAfter]).toContain(firstTitleBefore);
-    expect([firstTitleAfter, secondTitleAfter]).toContain(secondTitleBefore);
+    expect(firstTitleAfter).toBe(secondTitleBefore);
+    expect(secondTitleAfter).toBe(firstTitleBefore);
   });
 });

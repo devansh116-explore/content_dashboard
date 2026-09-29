@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import ReduxProvider from "@/components/providers/ReduxProvider";
 import ThemeSync from "@/components/providers/ThemeSync";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 
 export const metadata: Metadata = {
   title: "Content Dashboard",
@@ -14,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col font-sans">
         <ReduxProvider>
           <ThemeSync />
-          {children}
+          <ToastProvider>{children}</ToastProvider>
         </ReduxProvider>
       </body>
     </html>

@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import clsx from "clsx";
 import { ALL_CATEGORIES } from "@/lib/types";
@@ -16,6 +17,39 @@ export default function PreferencesPanel({
 }) {
   const dispatch = useAppDispatch();
   const categories = useAppSelector((s) => s.preferences.categories);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const dialog = dialogRef.current;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )).filter((element) => !element.hasAttribute("disabled"));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    requestAnimationFrame(() => dialog?.querySelector<HTMLElement>("button")?.focus());
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [open]);
 
   return (
     <AnimatePresence>
@@ -29,6 +63,10 @@ export default function PreferencesPanel({
             className="fixed inset-0 z-40 bg-black/30"
           />
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="preferences-title"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -36,7 +74,7 @@ export default function PreferencesPanel({
             className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col border-l border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-950"
           >
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+              <h2 id="preferences-title" className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                 Preferences
               </h2>
               <button

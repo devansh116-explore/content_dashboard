@@ -21,7 +21,8 @@ test.describe("Search", () => {
     const titles = await page.locator("article h3").allTextContents();
     // At least the mock data is generated in a way that "technology" search
     // should surface technology-flavoured headlines/hashtags.
-    expect(titles.some((t) => t.toLowerCase().includes("technology") || t.length > 0)).toBeTruthy();
+    expect(titles.length).toBeGreaterThan(0);
+    expect(titles.every((title) => title.toLowerCase().includes("technology"))).toBe(true);
   });
 
   test("clearing the search restores the full feed", async ({ page }) => {

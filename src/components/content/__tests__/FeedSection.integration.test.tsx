@@ -5,6 +5,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import { contentApi } from "@/store/api/contentApi";
 import preferencesReducer, { PreferencesState } from "@/store/slices/preferencesSlice";
 import favoritesReducer from "@/store/slices/favoritesSlice";
+import readLaterReducer from "@/store/slices/readLaterSlice";
 import uiReducer from "@/store/slices/uiSlice";
 import { ContentItem, PagedResponse } from "@/lib/types";
 import FeedSection from "../FeedSection";
@@ -59,6 +60,7 @@ function renderFeed(categories: PreferencesState["categories"] = ["technology"])
     reducer: {
       preferences: preferencesReducer,
       favorites: favoritesReducer,
+      readLater: readLaterReducer,
       ui: uiReducer,
       [contentApi.reducerPath]: contentApi.reducer,
     },

@@ -27,4 +27,5 @@ export function writeStorage<T>(key: string, value: T): void {
 export const STORAGE_KEYS = {
   preferences: "content-dashboard:preferences",
   favorites: "content-dashboard:favorites",
+  readLater: "content-dashboard:read-later",
 } as const;

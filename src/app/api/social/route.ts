@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ContentItem, PagedResponse } from "@/lib/types";
 import { generateMockItems } from "@/lib/mockData";
-import { filterSearch, PAGE_SIZE, parseCategories, parsePage } from "@/lib/queryParams";
+import { filterSearch, hasInvalidCategories, PAGE_SIZE, parseCategories, parsePage } from "@/lib/queryParams";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +11,9 @@ export const dynamic = "force-dynamic";
 // allows ("this can be a mock API if necessary").
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
+  if (hasInvalidCategories(searchParams.get("categories"))) {
+    return NextResponse.json({ error: "Invalid category filter." }, { status: 400 });
+  }
   const categories = parseCategories(searchParams.get("categories"));
   const page = parsePage(searchParams.get("page"));
   const search = searchParams.get("search") ?? "";

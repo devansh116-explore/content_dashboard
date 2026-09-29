@@ -26,8 +26,8 @@ test.describe("Feed drag-and-drop", () => {
     const firstTitleAfter = await cardsAfter.nth(0).locator("h3").textContent();
     const secondTitleAfter = await cardsAfter.nth(1).locator("h3").textContent();
 
-    expect([firstTitleAfter, secondTitleAfter]).toContain(firstTitleBefore);
-    expect([firstTitleAfter, secondTitleAfter]).toContain(secondTitleBefore);
+    expect(firstTitleAfter).toBe(secondTitleBefore);
+    expect(secondTitleAfter).toBe(firstTitleBefore);
   });
 
   test("a drag handle is keyboard-focusable and reachable via Tab", async ({ page }) => {

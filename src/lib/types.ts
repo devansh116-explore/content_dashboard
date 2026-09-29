@@ -8,6 +8,26 @@ export type Category =
   | "health"
   | "science";
 
+export interface MoreInfo {
+  id: string;
+  source: ContentSource;
+  category: Category;
+  title: string;
+  summary: string;
+  content: string;
+  url: string;
+  imageUrl: string;
+  author: string;
+  publishedAt: string;
+}
+
+export interface AiSummary {
+  summary: string;
+  takeaways: string[];
+  provider: "openai" | "fallback";
+  model?: string;
+}
+
 export interface ContentItem {
   id: string;
   source: ContentSource;
@@ -23,6 +43,24 @@ export interface ContentItem {
     label: string; // "views" | "score" | "likes"
     value: number;
   };
+  moreInfo?: MoreInfo;
+}
+
+export function isContentItem(value: unknown): value is ContentItem {
+  if (!value || typeof value !== "object") return false;
+  const item = value as Partial<ContentItem>;
+  return (
+    typeof item.id === "string" && item.id.length > 0 &&
+    (['news', 'recommendation', 'social'] as ContentSource[]).includes(item.source as ContentSource) &&
+    ALL_CATEGORIES.includes(item.category as Category) &&
+    typeof item.title === "string" &&
+    typeof item.description === "string" &&
+    typeof item.imageUrl === "string" &&
+    typeof item.url === "string" &&
+    typeof item.author === "string" &&
+    typeof item.publishedAt === "string" && !Number.isNaN(Date.parse(item.publishedAt)) &&
+    typeof item.ctaLabel === "string"
+  );
 }
 
 export interface PagedResponse<T> {

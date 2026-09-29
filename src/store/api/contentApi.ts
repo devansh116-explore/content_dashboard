@@ -1,18 +1,20 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { Category, ContentItem, PagedResponse } from "@/lib/types";
+import { AiSummary, Category, ContentItem, ContentSource, MoreInfo, PagedResponse } from "@/lib/types";
 
 interface FetchArgs {
   categories: Category[];
   page: number;
   search?: string;
   trending?: boolean;
+  source?: ContentSource;
 }
 
-function buildParams({ categories, page, search, trending }: FetchArgs): string {
+function buildParams({ categories, page, search, trending, source }: FetchArgs): string {
   const params = new URLSearchParams({ page: String(page) });
   if (categories.length) params.set("categories", categories.join(","));
   if (search) params.set("search", search);
   if (trending) params.set("trending", "true");
+  if (source) params.set("source", source);
   return params.toString();
 }
 
@@ -27,6 +29,7 @@ export const contentApi = createApi({
     // browser and in tests, so this is a portable fix rather than a
     // test-only shim.
     baseUrl: typeof window !== "undefined" ? `${window.location.origin}/api` : "http://localhost/api",
+    timeout: 8_000,
   }),
   tagTypes: ["News", "Recommendations", "Social"],
   endpoints: (builder) => ({
@@ -81,7 +84,47 @@ export const contentApi = createApi({
       },
       forceRefetch: ({ currentArg, previousArg }) => currentArg?.page !== previousArg?.page,
     }),
+    getMoreContent: builder.query<PagedResponse<ContentItem>, FetchArgs>({
+      query: (args) => `/more-content?${buildParams(args)}`,
+      serializeQueryArgs: ({ queryArgs, endpointName }) =>
+        JSON.stringify({
+          endpointName,
+          categories: queryArgs.categories,
+          search: queryArgs.search,
+          trending: queryArgs.trending,
+          source: queryArgs.source,
+        }),
+      merge: (currentCache, newItems, { arg }) => {
+        if (arg.page === 1) return newItems;
+        const existingIds = new Set(currentCache.items.map((item) => item.id));
+        currentCache.items.push(...newItems.items.filter((item) => !existingIds.has(item.id)));
+        currentCache.nextPage = newItems.nextPage;
+      },
+      forceRefetch: ({ currentArg, previousArg }) => currentArg?.page !== previousArg?.page,
+    }),
+    getMoreInfo: builder.query<MoreInfo, ContentItem>({
+      query: (item) => ({
+        url: "/more-info",
+        method: "POST",
+        body: item,
+      }),
+      transformResponse: (response: { moreInfo: MoreInfo }) => response.moreInfo,
+    }),
+    getAiSummary: builder.query<AiSummary, ContentItem>({
+      query: (item) => ({
+        url: "/ai/summary",
+        method: "POST",
+        body: { item },
+      }),
+    }),
   }),
 });
 
-export const { useGetNewsQuery, useGetRecommendationsQuery, useGetSocialQuery } = contentApi;
+export const {
+  useGetNewsQuery,
+  useGetRecommendationsQuery,
+  useGetSocialQuery,
+  useGetMoreContentQuery,
+  useGetMoreInfoQuery,
+  useGetAiSummaryQuery,
+} = contentApi;

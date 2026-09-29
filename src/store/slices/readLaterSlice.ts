@@ -2,29 +2,29 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { ContentItem, isContentItem } from "@/lib/types";
 import { readStorage, STORAGE_KEYS, writeStorage } from "@/lib/storage";
 
-export interface FavoritesState {
+export interface ReadLaterState {
   items: Record<string, ContentItem>;
-  order: string[]; // ids, in user-chosen display order (drag-and-drop target)
+  order: string[];
   hydrated: boolean;
 }
 
-const defaultState: FavoritesState = {
+const defaultState: ReadLaterState = {
   items: {},
   order: [],
   hydrated: false,
 };
 
-const favoritesSlice = createSlice({
-  name: "favorites",
+const readLaterSlice = createSlice({
+  name: "readLater",
   initialState: defaultState,
   reducers: {
     hydrate(state) {
-      const saved = getHydratedFavorites();
+      const saved = getHydratedReadLater();
       state.items = saved.items;
       state.order = saved.order;
       state.hydrated = true;
     },
-    toggleFavorite(state, action: PayloadAction<ContentItem>) {
+    toggleReadLater(state, action: PayloadAction<ContentItem>) {
       const item = action.payload;
       if (state.items[item.id]) {
         delete state.items[item.id];
@@ -35,19 +35,20 @@ const favoritesSlice = createSlice({
       }
       persist(state);
     },
-    reorderFavorites(state, action: PayloadAction<string[]>) {
-      state.order = action.payload;
+    clearReadLater(state) {
+      state.items = {};
+      state.order = [];
       persist(state);
     },
   },
 });
 
-function persist(state: FavoritesState) {
-  writeStorage(STORAGE_KEYS.favorites, { items: state.items, order: state.order });
+function persist(state: ReadLaterState) {
+  writeStorage(STORAGE_KEYS.readLater, { items: state.items, order: state.order });
 }
 
-function getHydratedFavorites(): Pick<FavoritesState, "items" | "order"> {
-  const saved = readStorage<unknown>(STORAGE_KEYS.favorites, null);
+function getHydratedReadLater(): Pick<ReadLaterState, "items" | "order"> {
+  const saved = readStorage<unknown>(STORAGE_KEYS.readLater, null);
   if (!saved || typeof saved !== "object") return { items: {}, order: [] };
 
   const candidate = saved as { items?: unknown; order?: unknown };
@@ -64,5 +65,5 @@ function getHydratedFavorites(): Pick<FavoritesState, "items" | "order"> {
   return { items, order };
 }
 
-export const { hydrate: hydrateFavorites, toggleFavorite, reorderFavorites } = favoritesSlice.actions;
-export default favoritesSlice.reducer;
+export const { hydrate: hydrateReadLater, toggleReadLater, clearReadLater } = readLaterSlice.actions;
+export default readLaterSlice.reducer;

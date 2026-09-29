@@ -19,3 +19,9 @@ export function filterSearch<T extends { title: string }>(items: T[], search: st
   const normalized = search.trim().toLowerCase();
   return normalized ? items.filter((item) => item.title.toLowerCase().includes(normalized)) : items;
 }
+
+export function hasInvalidCategories(param: string | null): boolean {
+  if (!param) return false;
+  const values = param.split(",").map((category) => category.trim());
+  return values.length === 0 || values.some((category) => !(ALL_CATEGORIES as string[]).includes(category));
+}

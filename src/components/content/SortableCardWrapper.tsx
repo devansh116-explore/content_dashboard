@@ -6,7 +6,15 @@ import { GripVertical } from "lucide-react";
 import { ContentItem } from "@/lib/types";
 import ContentCard from "./ContentCard";
 
-export default function SortableCardWrapper({ id, item }: { id: string; item: ContentItem }) {
+export default function SortableCardWrapper({
+  id,
+  item,
+  onOpenDetails,
+}: {
+  id: string;
+  item: ContentItem;
+  onOpenDetails?: (item: ContentItem) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
@@ -29,7 +37,7 @@ export default function SortableCardWrapper({ id, item }: { id: string; item: Co
       >
         <GripVertical size={12} />
       </button>
-      <ContentCard item={item} />
+      <ContentCard item={item} onOpenDetails={onOpenDetails} />
     </div>
   );
 }

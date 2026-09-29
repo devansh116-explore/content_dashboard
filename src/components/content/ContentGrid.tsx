@@ -26,6 +26,7 @@ export default function ContentGrid({
   onRetry,
   emptyMessage,
   onReorder,
+  onOpenDetails,
 }: {
   items: ContentItem[];
   isLoading: boolean;
@@ -36,8 +37,10 @@ export default function ContentGrid({
   emptyMessage?: string;
   /** Pass to enable drag-and-drop reordering (mouse, touch, and keyboard). */
   onReorder?: (activeId: string, overId: string) => void;
+  onOpenDetails?: (item: ContentItem) => void;
 }) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const requestPendingRef = useRef(false);
 
   useEffect(() => {
     if (!hasMore || isLoading || isError) return;
@@ -46,13 +49,20 @@ export default function ContentGrid({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) onLoadMore();
+        if (entries[0].isIntersecting && !requestPendingRef.current) {
+          requestPendingRef.current = true;
+          onLoadMore();
+        }
       },
       { rootMargin: "200px" }
     );
     observer.observe(node);
     return () => observer.disconnect();
   }, [hasMore, isLoading, isError, onLoadMore]);
+
+  useEffect(() => {
+    if (isLoading || isError || !hasMore || items.length) requestPendingRef.current = false;
+  }, [hasMore, isError, isLoading, items.length]);
 
   // Keyboard sensor alongside the pointer sensor means reordering is not
   // mouse/touch-only: a card's drag handle can be Tab-focused and moved with
@@ -77,9 +87,9 @@ export default function ContentGrid({
       <AnimatePresence initial={false}>
         {items.map((item) =>
           onReorder ? (
-            <SortableCardWrapper key={item.id} id={item.id} item={item} />
+            <SortableCardWrapper key={item.id} id={item.id} item={item} onOpenDetails={onOpenDetails} />
           ) : (
-            <ContentCard key={item.id} item={item} />
+            <ContentCard key={item.id} item={item} onOpenDetails={onOpenDetails} />
           )
         )}
       </AnimatePresence>

@@ -16,6 +16,14 @@ Open [http://localhost:3000](http://localhost:3000). **No API keys are
 required** — the app serves realistic, deterministic mock data out of the box
 (see [Data sources](#data-sources) below).
 
+## Project docs
+
+- [docs/README.md](docs/README.md)
+- [docs/SUMMARY.md](docs/SUMMARY.md)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+These explain the API structure, the unified feed flow, and the architecture of the dashboard.
+
 ### Optional: live API keys
 
 Copy `.env.local.example` to `.env.local` and fill in either or both:
@@ -28,6 +36,7 @@ cp .env.local.example .env.local
 | --------------- | ------------------------ | ----------------------------------------- |
 | `NEWS_API_KEY`  | News section              | https://newsapi.org                        |
 | `TMDB_API_KEY`  | Recommendations section    | https://www.themoviedb.org/settings/api   |
+| `OPENAI_API_KEY` | Optional Smart Summary    | https://platform.openai.com/api-keys      |
 
 If a key is missing, or the live call fails for any reason (rate limit,
 network), that section transparently falls back to mock data — the app never
@@ -54,21 +63,23 @@ npm run test:e2e     # end-to-end tests (Playwright) — builds and serves autom
 ```
 src/
   app/
-    api/{news,recommendations,social}/route.ts   # server-side proxy routes
+    api/{news,recommendations,social}/route.ts   # server-side source proxies
+    api/{more-content,more-info}/route.ts       # aggregated/detail APIs
     page.tsx                                      # dashboard shell
     layout.tsx                                    # providers, theme sync
   components/
     layout/       Sidebar, Header
     content/       ContentCard, ContentGrid (infinite scroll + optional drag-and-drop),
-                    SortableCardWrapper, Feed/Trending/Favorites sections, state views
+                    SortableCardWrapper, Feed/Trending/Favorites/Read Later sections,
+                    detail drawer, state views
     search/        Debounced SearchBar
     settings/       PreferencesPanel (category picker)
     providers/       ReduxProvider, ThemeSync
   store/
-    slices/          preferences, favorites, ui
+    slices/          preferences, favorites, readLater, ui
     api/contentApi.ts   RTK Query endpoints
   hooks/            useDebounce, useUnifiedFeed, useOrderedItems
-  lib/                types, mock data generator, localStorage helper
+  lib/                types, mock data, storage, rate limiting, query utilities
 e2e/                 Playwright specs (search, favorites drag-and-drop, feed drag-and-drop)
 ```
 
@@ -84,28 +95,42 @@ of source.
 ### State management
 
 - **RTK Query** owns all server data (news/recommendations/social), including
-  caching, loading/error state, and cursor-based pagination via a custom
+  caching, loading/error state, and page-based pagination via a custom
   `merge` function per endpoint (the standard RTK Query "infinite list"
   pattern). Each endpoint's `serializeQueryArgs` includes the endpoint name
   explicitly — RTK Query does **not** automatically namespace a custom
   serializer by endpoint, so three endpoints with structurally similar args
   can otherwise collide onto the same cache entry. (This bit me once during
   development — see the note below.)
-- **Redux slices** (`preferences`, `favorites`, `ui`) own client state:
-  selected categories, dark mode, favorited items with a manual display
-  order, and the debounced search term. `preferences` and `favorites` persist
+- **Redux slices** (`preferences`, `favorites`, `readLater`, `ui`) own client state:
+  selected categories, dark mode, favorited and read-later items with manual
+  display orders, source filters, sort mode, and the debounced search term.
+  `preferences`, `favorites`, and `readLater` persist
   to `localStorage` and are hydrated client-side after mount (via a
   `hydrate` action dispatched in a `useEffect`) to avoid SSR/CSR hydration
   mismatches — the server never has access to `localStorage`.
 
 ### The unified feed
 
-`useUnifiedFeed` (in `src/hooks/`) calls all three RTK Query hooks with the
-same filter args, merges their `items`, sorts by recency, and exposes a
-single `{ items, isLoading, isError, hasMore, loadMore }` surface. Both the
-Feed and Trending sections use this hook (Trending additionally re-sorts by
-a mock engagement metric) — the pagination, loading, and error-handling logic
-is written once and shared.
+`useUnifiedFeed` (in `src/hooks/`) calls the active RTK Query hooks with the
+same filter args, merges their `items`, applies source/sort preferences, and
+exposes a single `{ items, isLoading, isError, hasMore, loadMore }` surface.
+It also reports partial source failures so the UI can show a retryable warning
+while preserving successful results. Both the Feed and Trending sections use
+this hook; Trending additionally re-sorts by a mock engagement metric.
+
+### Saved content and details
+
+- **Read Later** stores a device-local queue with ordering, a dedicated section,
+  mobile navigation, and a clear-all action.
+- **ContentDetailDrawer** loads expanded context on demand through the detail
+  API, supports retry and copy-summary actions, and falls back to card data if
+  the request fails.
+- **Smart Summary** is an optional, user-triggered OpenAI-compatible flow. It
+  validates structured output, never exposes the provider key to the browser,
+  and returns a labeled deterministic fallback when no key is configured.
+- Search controls support source filtering and `For you` sorting based on
+  selected, favorited, and saved categories plus freshness.
 
 ### Drag-and-drop reordering
 
@@ -143,6 +168,7 @@ keys — not mouse/touch-only). Two call sites share this:
   this suite is what actually proves the fetch → Redux → render pipeline
   works end-to-end, which is what the brief's "content renders properly
   when fetched... empty states, errors" requirement is asking for.
+- **API route tests** cover detail validation and stable aggregated pagination.
 - **E2E** (Playwright): debounced search, favoriting a card end-to-end
   through Redux, and drag-and-drop reordering (both keyboard and
   pointer-based) on **both** the Favorites section and the main Feed.
@@ -154,6 +180,14 @@ keys — not mouse/touch-only). Two call sites share this:
 | News | NewsAPI top-headlines/everything | Deterministic seeded generator, 6 categories |
 | Recommendations | TMDB popular/trending/search | Same generator, "Play Now" CTA |
 | Social | — (always mocked) | Same generator, hashtag-styled titles |
+
+Smart Summary uses `OPENAI_API_KEY`, `OPENAI_MODEL`, and optionally
+`OPENAI_BASE_URL`. It is disabled by omission of the key, without disabling the
+rest of the dashboard.
+
+External provider requests use an 8-second timeout and a lightweight per-client
+in-memory limiter. A multi-instance deployment should replace that limiter with
+platform-level or Redis-backed throttling.
 
 The mock generator (`src/lib/mockData.ts`) uses a seeded PRNG (not `Math.random`)
 so a given page/category/source combination always produces the same items —

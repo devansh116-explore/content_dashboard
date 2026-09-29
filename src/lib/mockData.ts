@@ -1,4 +1,22 @@
-import { ALL_CATEGORIES, Category, ContentItem, ContentSource } from "./types";
+import { ALL_CATEGORIES, Category, ContentItem, ContentSource, MoreInfo } from "./types";
+
+export function buildMoreInfo(item: ContentItem): MoreInfo {
+  const summary = item.description || item.title;
+  const content = `${summary} This expanded context provides a fuller background for the item, covering the broader implications, key signals, and the latest developments in ${item.category}.`;
+
+  return {
+    id: item.id,
+    source: item.source,
+    category: item.category,
+    title: item.title,
+    summary,
+    content,
+    url: item.url,
+    imageUrl: item.imageUrl,
+    author: item.author,
+    publishedAt: item.publishedAt,
+  };
+}
 
 // Small deterministic PRNG so the same page number always yields the same
 // "random" content — makes pagination stable and tests reproducible.
@@ -65,7 +83,8 @@ const AUTHORS = [
   "M. Novak",
 ];
 
-const MOCK_BASE_TIME = Date.parse("2026-01-01T00:00:00.000Z");
+// Captured once per server process so demo timestamps stay current and stable.
+const MOCK_BASE_TIME = Date.now();
 
 function pick<T>(arr: T[], rnd: () => number): T {
   return arr[Math.floor(rnd() * arr.length)];
@@ -98,7 +117,7 @@ export function generateMockItems(
     const seed = page * pageSize + i;
     const headline = pick(TOPICS[category], rnd);
     const hoursAgo = Math.floor(rnd() * 72);
-    return {
+    const item: ContentItem = {
       id: `${source}-${category}-${seed}`,
       source,
       category,
@@ -118,6 +137,11 @@ export function generateMockItems(
       metric: trending
         ? { label: source === "recommendation" ? "score" : "views", value: Math.floor(rnd() * 9000) + 100 }
         : undefined,
+    };
+
+    return {
+      ...item,
+      moreInfo: buildMoreInfo(item),
     };
   });
 }

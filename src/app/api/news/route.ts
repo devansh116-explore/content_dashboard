@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Category, ContentItem, PagedResponse } from "@/lib/types";
 import { generateMockItems } from "@/lib/mockData";
-import { filterSearch, PAGE_SIZE, parseCategories, parsePage } from "@/lib/queryParams";
+import { filterSearch, hasInvalidCategories, PAGE_SIZE, parseCategories, parsePage } from "@/lib/queryParams";
+import { checkRateLimit, requestClientKey } from "@/lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +17,9 @@ interface NewsApiArticle {
   publishedAt?: string;
 }
 
-function mapArticleToItem(article: NewsApiArticle, category: Category, index: number): ContentItem {
-  return {
-    id: article.url ?? `news-${category}-${index}`,
+function mapArticleToItem(article: NewsApiArticle, category: Category, page: number, index: number): ContentItem {
+  const item: ContentItem = {
+    id: article.url ?? `news-${category}-${page}-${index}`,
     source: "news",
     category,
     title: article.title ?? "Untitled",
@@ -29,10 +30,36 @@ function mapArticleToItem(article: NewsApiArticle, category: Category, index: nu
     publishedAt: article.publishedAt ?? new Date().toISOString(),
     ctaLabel: "Read More",
   };
+
+  return {
+    ...item,
+    moreInfo: {
+      id: item.id,
+      source: item.source,
+      category: item.category,
+      title: item.title,
+      summary: item.description,
+      content: `${item.description} This expanded overview adds additional context from the publisher and a summary of the wider story behind the update.`,
+      url: item.url,
+      imageUrl: item.imageUrl,
+      author: item.author,
+      publishedAt: item.publishedAt,
+    },
+  };
 }
 
 export async function GET(req: NextRequest) {
+  const rateLimit = checkRateLimit(`news:${requestClientKey(req)}`);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+    );
+  }
   const { searchParams } = new URL(req.url);
+  if (hasInvalidCategories(searchParams.get("categories"))) {
+    return NextResponse.json({ error: "Invalid category filter." }, { status: 400 });
+  }
   const categories = parseCategories(searchParams.get("categories"));
   const page = parsePage(searchParams.get("page"));
   const search = searchParams.get("search") ?? "";
@@ -54,28 +81,39 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const category = categories[0] ?? "technology";
-    const params = new URLSearchParams({
-      apiKey,
-      page: String(page),
-      pageSize: String(PAGE_SIZE),
-      language: "en",
-    });
-    if (search) params.set("q", search);
-    const endpoint = search
-      ? `https://newsapi.org/v2/everything?${params.toString()}`
-      : `https://newsapi.org/v2/top-headlines?${params.toString()}&category=${category}`;
-
-    const res = await fetch(endpoint, { next: { revalidate: 60 } });
-    if (!res.ok) throw new Error(`NewsAPI error ${res.status}`);
-    const data = await res.json();
-    const articles: NewsApiArticle[] = data.articles ?? [];
-    const items: ContentItem[] = articles.map((a, i) => mapArticleToItem(a, category, i));
+    const requestedCategories = categories.length ? categories : ["technology" as Category];
+    const categoriesToFetch = search ? [requestedCategories[0]] : requestedCategories;
+    const responses = await Promise.all(categoriesToFetch.map(async (category) => {
+      const newsApiCategory = category === "finance" ? "business" : category;
+      const params = new URLSearchParams({
+        apiKey,
+        page: String(page),
+        pageSize: String(PAGE_SIZE),
+        language: "en",
+      });
+      if (search) params.set("q", search);
+      const endpoint = search
+        ? `https://newsapi.org/v2/everything?${params.toString()}`
+        : `https://newsapi.org/v2/top-headlines?${params.toString()}&category=${newsApiCategory}`;
+      const res = await fetch(endpoint, { next: { revalidate: 60 }, signal: AbortSignal.timeout(8_000) });
+      if (!res.ok) throw new Error(`NewsAPI error ${res.status}`);
+      const data = await res.json();
+      return {
+        category,
+        totalResults: Number(data.totalResults) || 0,
+        articles: (data.articles ?? []) as NewsApiArticle[],
+      };
+    }));
+    const items = responses
+      .flatMap(({ category, articles }) => articles.map((article, index) => mapArticleToItem(article, category, page, index)))
+      .filter((item, index, values) => values.findIndex((candidate) => candidate.id === item.id) === index)
+      .slice(0, PAGE_SIZE);
+    const totalResults = responses.reduce((total, response) => total + response.totalResults, 0);
 
     const response: PagedResponse<ContentItem> = {
       items,
       nextPage: items.length === PAGE_SIZE ? page + 1 : null,
-      totalAvailable: data.totalResults ?? items.length,
+      totalAvailable: totalResults || items.length,
     };
     return NextResponse.json(response);
   } catch {

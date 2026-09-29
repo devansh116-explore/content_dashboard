@@ -5,6 +5,7 @@ import { Provider } from "react-redux";
 import { makeStore } from "@/store/store";
 import { hydrate as hydratePreferences } from "@/store/slices/preferencesSlice";
 import { hydrateFavorites } from "@/store/slices/favoritesSlice";
+import { hydrateReadLater } from "@/store/slices/readLaterSlice";
 
 export default function ReduxProvider({ children }: { children: React.ReactNode }) {
   // Lazy-initialized once per component instance (not per render) — the
@@ -19,6 +20,7 @@ export default function ReduxProvider({ children }: { children: React.ReactNode 
     // since the server has no access to the browser's localStorage.
     store.dispatch(hydratePreferences());
     store.dispatch(hydrateFavorites());
+    store.dispatch(hydrateReadLater());
   }, [store]);
 
   return <Provider store={store}>{children}</Provider>;

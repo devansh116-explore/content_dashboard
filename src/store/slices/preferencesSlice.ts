@@ -28,13 +28,17 @@ const preferencesSlice = createSlice({
     },
     toggleCategory(state, action: PayloadAction<Category>) {
       const category = action.payload;
+      if (state.categories.length === 1 && state.categories[0] === category) return;
       state.categories = state.categories.includes(category)
         ? state.categories.filter((c) => c !== category)
         : [...state.categories, category];
       persist(state);
     },
     setCategories(state, action: PayloadAction<Category[]>) {
-      state.categories = action.payload;
+      const categories = action.payload.filter((category, index, values) =>
+        ALL_CATEGORIES.includes(category) && values.indexOf(category) === index
+      );
+      state.categories = categories.length ? categories : defaultState.categories;
       persist(state);
     },
     toggleDarkMode(state) {

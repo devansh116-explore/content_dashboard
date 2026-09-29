@@ -54,3 +54,17 @@ export function ErrorState({ onRetry }: { onRetry?: () => void }) {
     </div>
   );
 }
+
+export function PartialErrorNotice({ sources, rateLimitedSources = [], onRetry }: { sources: string[]; rateLimitedSources?: string[]; onRetry?: () => void }) {
+  const isRateLimited = rateLimitedSources.length > 0;
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+      <span>{isRateLimited ? `${rateLimitedSources.join(", ")} reached its request limit. Please wait before retrying.` : `${sources.join(", ")} ${sources.length === 1 ? "source is" : "sources are"} temporarily unavailable. Showing the rest of your feed.`}</span>
+      {onRetry && (
+        <button type="button" onClick={onRetry} className="font-semibold underline underline-offset-2">
+          Retry
+        </button>
+      )}
+    </div>
+  );
+}

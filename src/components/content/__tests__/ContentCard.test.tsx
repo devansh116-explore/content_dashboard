@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import favoritesReducer from "@/store/slices/favoritesSlice";
+import readLaterReducer from "@/store/slices/readLaterSlice";
 import { ContentItem } from "@/lib/types";
 import ContentCard from "../ContentCard";
 
@@ -21,7 +22,7 @@ const item: ContentItem = {
 };
 
 function renderCard() {
-  const store = configureStore({ reducer: { favorites: favoritesReducer } });
+  const store = configureStore({ reducer: { favorites: favoritesReducer, readLater: readLaterReducer } });
   render(
     <Provider store={store}>
       <ContentCard item={item} />
@@ -61,5 +62,15 @@ describe("ContentCard", () => {
     await user.click(screen.getByLabelText(/remove from favorites/i));
 
     expect(store.getState().favorites.order).toEqual([]);
+  });
+
+  it("saves the item to read later", async () => {
+    const user = userEvent.setup();
+    const store = renderCard();
+
+    await user.click(screen.getByLabelText(/save for later/i));
+
+    expect(store.getState().readLater.order).toEqual(["news-1"]);
+    expect(screen.getByLabelText(/remove from read later/i)).toHaveAttribute("aria-pressed", "true");
   });
 });
