@@ -2,6 +2,8 @@
 
 This folder contains the working summary and architecture notes for the dashboard.
 
+Live demo: [contentdashboard-theta.vercel.app](https://contentdashboard-theta.vercel.app/)
+
 - [SUMMARY.md](./SUMMARY.md) — overview of the app's purpose and content pipeline
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — technical structure and request flow
 

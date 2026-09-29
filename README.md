@@ -5,6 +5,8 @@ personalized, searchable, favoritable feed. Built with Next.js (App Router),
 TypeScript, Redux Toolkit + RTK Query, Tailwind CSS, Framer Motion, and
 `@dnd-kit`.
 
+**Live demo:** [contentdashboard-theta.vercel.app](https://contentdashboard-theta.vercel.app/)
+
 ## Quick start
 
 ```bash
