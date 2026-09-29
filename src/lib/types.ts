@@ -39,6 +39,7 @@ export interface ContentItem {
   author: string;
   publishedAt: string; // ISO date string
   ctaLabel: string; // "Read More" | "Play Now" | "View Post"
+  isDemo?: boolean;
   metric?: {
     label: string; // "views" | "score" | "likes"
     value: number;

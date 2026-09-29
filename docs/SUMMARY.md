@@ -18,6 +18,9 @@ The dashboard presents a unified content experience by combining multiple source
 - Source filtering and For You sorting
 - Partial-source failure notices with retry
 - Optional validated Smart Summary through an OpenAI-compatible provider
+- Today&apos;s Briefing with three quick picks
+- Explicit Live/Demo/Mixed source status
+- Source-aware mock destinations instead of placeholder links
 - Mock fallback when APIs are unavailable
 
 ## How the content pipeline works

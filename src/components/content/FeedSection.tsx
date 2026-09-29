@@ -6,7 +6,7 @@ import { useUnifiedFeed } from "@/hooks/useUnifiedFeed";
 import { useOrderedItems } from "@/hooks/useOrderedItems";
 import ContentGrid from "./ContentGrid";
 import ContentDetailDrawer from "./ContentDetailDrawer";
-import { PartialErrorNotice } from "./StateViews";
+import { PartialErrorNotice, SourceStatus } from "./StateViews";
 
 export default function FeedSection() {
   const { items, isLoading, isError, hasMore, loadMore, retry, failedSources, rateLimitedSources, hasPartialError } = useUnifiedFeed();
@@ -22,6 +22,7 @@ export default function FeedSection() {
         <span className="text-xs text-neutral-400">{items.length} items</span>
       </div>
       <p className="mb-4 text-xs text-neutral-400">Drag any card to reorder your feed.</p>
+      <SourceStatus items={items} />
       {hasPartialError && <PartialErrorNotice sources={failedSources} rateLimitedSources={rateLimitedSources} onRetry={retry} />}
       <ContentGrid
         items={ordered}

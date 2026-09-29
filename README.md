@@ -131,6 +131,10 @@ this hook; Trending additionally re-sorts by a mock engagement metric.
 - **Smart Summary** is an optional, user-triggered OpenAI-compatible flow. It
   validates structured output, never exposes the provider key to the browser,
   and returns a labeled deterministic fallback when no key is configured.
+- The home feed includes a compact **Today&apos;s Briefing** with three clickable
+  picks, and source status makes Live, Demo, and Mixed data modes explicit.
+- Mock CTAs open source-appropriate search destinations instead of placeholder
+  `example.com` links.
 - Search controls support source filtering and `For you` sorting based on
   selected, favorited, and saved categories plus freshness.
 

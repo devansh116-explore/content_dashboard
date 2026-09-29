@@ -5,7 +5,7 @@ import { ContentItem } from "@/lib/types";
 import { useUnifiedFeed } from "@/hooks/useUnifiedFeed";
 import ContentGrid from "./ContentGrid";
 import ContentDetailDrawer from "./ContentDetailDrawer";
-import { PartialErrorNotice } from "./StateViews";
+import { PartialErrorNotice, SourceStatus } from "./StateViews";
 
 export default function TrendingSection() {
   const { items, isLoading, isError, hasMore, loadMore, retry, failedSources, rateLimitedSources, hasPartialError } = useUnifiedFeed({ trending: true });
@@ -24,6 +24,7 @@ export default function TrendingSection() {
         </h1>
         <span className="text-xs text-neutral-400">{items.length} items</span>
       </div>
+      <SourceStatus items={items} />
       {hasPartialError && <PartialErrorNotice sources={failedSources} rateLimitedSources={rateLimitedSources} onRetry={retry} />}
       <ContentGrid
         items={sorted}

@@ -68,3 +68,15 @@ export function PartialErrorNotice({ sources, rateLimitedSources = [], onRetry }
     </div>
   );
 }
+
+export function SourceStatus({ items }: { items: { source: string; isDemo?: boolean }[] }) {
+  if (!items.length) return null;
+  const demoCount = items.filter((item) => item.isDemo).length;
+  const liveCount = items.length - demoCount;
+  const label = liveCount === 0 ? "Demo mode · Mock content" : demoCount === 0 ? "Live sources" : "Mixed live + demo sources";
+  const style = liveCount === 0
+    ? "border-neutral-200 bg-neutral-100 text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300"
+    : "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200";
+
+  return <div className={`mb-4 inline-flex rounded-full border px-3 py-1 text-[11px] font-medium ${style}`}>{label}</div>;
+}

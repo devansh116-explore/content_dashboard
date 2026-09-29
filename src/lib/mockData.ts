@@ -130,10 +130,16 @@ export function generateMockItems(
           ? `Recommended for you based on your interest in ${category}. A closer look at what's trending this week.`
           : `${headline}. Coverage and context on the latest development in ${category}.`,
       imageUrl: imageFor(category, seed),
-      url: "https://example.com",
+      url:
+        source === "recommendation"
+          ? `https://www.themoviedb.org/search/movie?query=${encodeURIComponent(headline)}`
+          : source === "social"
+          ? `https://www.reddit.com/search/?q=${encodeURIComponent(category)}`
+          : `https://news.google.com/search?q=${encodeURIComponent(headline)}`,
       author: pick(AUTHORS, rnd),
       publishedAt: new Date(MOCK_BASE_TIME - (seed * 6 + hoursAgo) * 3600_000).toISOString(),
       ctaLabel,
+      isDemo: true,
       metric: trending
         ? { label: source === "recommendation" ? "score" : "views", value: Math.floor(rnd() * 9000) + 100 }
         : undefined,
